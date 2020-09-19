@@ -1,14 +1,22 @@
 import warnings
 from uuid import uuid4
+
 import librosa
 import librosa.display
 import numpy as np
 import sklearn
 from PIL import Image
+
 import utils
 from properties import *
 
 warnings.filterwarnings("ignore")
+
+
+def save_melspect_image(bird_kind, db_image, output_folder):
+    generated_filename = str(uuid4()) + '_' + bird_kind + '.tif'
+    db_image.save("{}{}".format(output_folder, generated_filename))
+    return generated_filename
 
 
 def get_song_samples(filename, bird_kind, output_folder):
@@ -30,8 +38,7 @@ def get_song_samples(filename, bird_kind, output_folder):
             db_array = (np.asarray(normalised_db) * 255).astype(np.uint8)
             db_image = Image.fromarray(np.array([db_array, db_array, db_array]).T)
 
-            filename = str(uuid4()) + '_' + bird_kind + '.tif'
-            db_image.save("{}{}".format(output_folder, filename))
+            filename = save_melspect_image(bird_kind, db_image, output_folder)
 
             samples_from_file.append({"song_sample": "{}{}".format(output_folder, filename),
                                       "bird": bird_kind})
