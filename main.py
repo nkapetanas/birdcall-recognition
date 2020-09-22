@@ -1,14 +1,13 @@
-import librosa.display
-from keras import Sequential
-from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
-from keras.layers import GlobalAveragePooling2D, Dense, BatchNormalization, Activation, Dropout
-from keras_preprocessing.image import ImageDataGenerator
-from sklearn.utils import class_weight
-import tensorflow as tf
-import cv2
 import glob
 import os
 import re
+
+import librosa.display
+import tensorflow as tf
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
+from keras_preprocessing.image import ImageDataGenerator
+from sklearn.utils import class_weight
+from tensorflow.python.keras.layers import GlobalMaxPooling2D, Dense, BatchNormalization, Activation, Dropout
 
 from Utils import *
 
@@ -30,13 +29,17 @@ def data_augmentation(df, target_size, batch_size, shuffle):
 def get_model():
     efficient_net_layers = tf.keras.applications.EfficientNetB0(weights=None, include_top=False,
                                                                 input_shape=(128, 128, 3))
+
+    # conv_base = ResNet50(weights='imagenet', include_top=False, pooling=None)
+    # conv_base.trainable = False
+
     for layer in efficient_net_layers.layers:
         layer.trainable = True
 
     model = tf.keras.Sequential()
     model.add(efficient_net_layers)
 
-    model.add(GlobalAveragePooling2D())
+    model.add(GlobalMaxPooling2D())
     model.add(Dense(256, use_bias=False))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
