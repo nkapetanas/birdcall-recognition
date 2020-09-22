@@ -1,12 +1,14 @@
-import os
-
 import librosa.display
 from keras import Sequential
 from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from keras.layers import GlobalAveragePooling2D, Dense, BatchNormalization, Activation, Dropout
 from keras_preprocessing.image import ImageDataGenerator
 from sklearn.utils import class_weight
-from tensorflow.keras.applications import EfficientNetB0
+import tensorflow as tf
+import cv2
+import glob
+import os
+import re
 
 from Utils import *
 
@@ -26,7 +28,12 @@ def data_augmentation(df, target_size, batch_size, shuffle):
 
 
 def get_model():
-    model = Sequential()
+    efficient_net_layers = tf.keras.applications.EfficientNetB0(weights=None, include_top=False,
+                                                                input_shape=(128, 128, 3))
+    for layer in efficient_net_layers.layers:
+        layer.trainable = True
+
+    model = tf.keras.Sequential()
     model.add(efficient_net_layers)
 
     model.add(GlobalAveragePooling2D())
@@ -41,17 +48,25 @@ def get_model():
     return model
 
 
-training_item_count = int(len(samples_df) * TRAINING_PERCENTAGE)
-validation_item_count = len(samples_df) - int(len(samples_df) * training_percentage)
-training_df = samples_df[:training_item_count]
-validation_df = samples_df[training_item_count:]
+def load_created_melspectro():
+    birdcall_list = []
 
-classes_to_predict = sorted(samples_df.bird.unique())
+    for img in glob.glob("./output_data/*.tif"):
+        filename = img[14:]
+        bird_type = re.search('_(.*).tif', filename).group(1)
+        birdcall_list.append({"bird_call_filepath": filename,
+                              "bird": bird_type})
+    return pd.DataFrame(birdcall_list)
 
-efficient_net_layers = EfficientNetB0(weights=None, include_top=False, input_shape=(128, 128, 3))
 
-for layer in efficient_net_layers.layers:
-    layer.trainable = True
+birdcall_df = load_created_melspectro()
+
+training_item_count = int(len(birdcall_df) * TRAINING_PERCENTAGE)
+validation_item_count = len(birdcall_df) - int(len(birdcall_df) * TRAINING_PERCENTAGE)
+training_df = birdcall_df[:training_item_count]
+validation_df = birdcall_df[training_item_count:]
+
+classes_to_predict = sorted(birdcall_df.bird.unique())
 
 callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=2, verbose=1, factor=0.7),
              EarlyStopping(monitor='val_loss', patience=5),
@@ -60,7 +75,7 @@ callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=2, verbose=1, factor
 model = get_model()
 model.compile(loss="categorical_crossentropy", optimizer='adam')
 
-class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, samples_df.bird.values)
+class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, birdcall_df.bird.values)
 class_weights_dict = {i: class_weights[i] for i, label in enumerate(classes_to_predict)}
 
 train_generator = data_augmentation(training_df, TARGET_SIZE, TRAINING_BATCH_SIZE, True)
