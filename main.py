@@ -107,8 +107,8 @@ def predict_submission(df, audio_file_path):
     sampling_rate = None
     sample_length = None
 
-    for idx, row in df.iterrows():
-        # I added this exception as I've heard that some files may be corrupted.
+    for index, row in df.iterrows():
+
         try:
             if previous_filename == "" or previous_filename != row.audio_id:
                 filename = '{}/{}.mp3'.format(audio_file_path, row.audio_id)
@@ -130,9 +130,9 @@ def predict_submission(df, audio_file_path):
                     audio_time_series[int(row.seconds - 5) * sampling_rate:int(row.seconds) * sampling_rate])
 
             predicted_bird = predict_on_melspectrogram(song_sample, sample_length)
-            df.at[idx, "birds"] = predicted_bird
+            df.at[index, "birds"] = predicted_bird
         except:
-            df.at[idx, "birds"] = "nocall"
+            df.at[index, "birds"] = "nocall"
     return df
 
 

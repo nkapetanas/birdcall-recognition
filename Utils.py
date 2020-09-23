@@ -38,3 +38,11 @@ def plot_loss_over_epoch(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='best')
     plt.show()
+
+def create_plot_Keras_model(history, field):
+    plt.plot(history.history[field])
+    plt.title('model ' + field)
+    plt.ylabel(field)
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
