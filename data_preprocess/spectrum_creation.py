@@ -23,6 +23,7 @@ train_target = data['species']
 
 data_dir = '../birdsong-recognition/train_audio/'
 
+
 for row in range(len(train_data)):
     audio_file = data_dir + train_data.ebird_code[row] + '/' + train_data.filename[row]
     
@@ -31,7 +32,7 @@ for row in range(len(train_data)):
     X = librosa.stft(x)
     
     Xdb = librosa.amplitude_to_db(abs(X))
-    plt.figure(figsize=(1.28, 1.28) , dpi = 100)
+    fig = plt.figure(figsize=(128 , 128) , dpi = 1)
     librosa.display.specshow(Xdb, sr = sr, x_axis='time', y_axis='hz')
     plt.axis('off')
     save_dir = '../birdsong-recognition/output_spectro' + '/' + train_data.ebird_code[row]
@@ -41,7 +42,10 @@ for row in range(len(train_data)):
     
     flag = '%s' % str(train_data.filename[row]).partition('.')[0]
     filename = os.path.join(save_dir , flag)
-    plt.savefig(filename + '.jpg' , dpi = 100)
+    plt.savefig(filename + '.jpg')
+    
+    fig.clf()
+    plt.close(fig)
     
     print(row)
 
