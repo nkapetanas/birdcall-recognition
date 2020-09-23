@@ -7,7 +7,7 @@ import numpy as np
 import sklearn
 from PIL import Image
 
-import utils
+import Utils
 from properties import *
 
 warnings.filterwarnings("ignore")
@@ -32,7 +32,7 @@ def get_song_samples(filename, bird_kind, output_folder):
         song_sliced = audio_time_series[index:index + sample_length]
 
         if len(song_sliced) >= sample_length:
-            mel_db = utils.compute_melspectrogram(song_sliced, sampling_rate, N_MELS, F_MIN, F_MAX)
+            mel_db = Utils.compute_melspectrogram(song_sliced, sampling_rate, N_MELS, F_MIN, F_MAX)
             normalised_db = sklearn.preprocessing.minmax_scale(mel_db)
 
             db_array = (np.asarray(normalised_db) * 255).astype(np.uint8)
@@ -45,7 +45,7 @@ def get_song_samples(filename, bird_kind, output_folder):
     return samples_from_file
 
 
-train_data = utils.read_csv_file(BASE_DIR + TRAIN_DATA)
+train_data = Utils.read_csv_file(BASE_DIR + TRAIN_DATA)
 
 for index, row in train_data.iterrows():
     file_path = BASE_DIR + TRAIN_AUDIO + row.ebird_code + '/' + row.filename

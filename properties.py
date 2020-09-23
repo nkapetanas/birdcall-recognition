@@ -1,12 +1,20 @@
-
 BASE_DIR = '../birdsong_recognition_data/'
 TRAIN_AUDIO = 'train_audio/'
 TRAIN_DATA = 'train.csv'
 TEST_DATA = 'test.csv'
 OUTPUT_FOLDER = "../output_data/"
+EXAMPLE_TEST_AUDIO = "example_test_audio"
+EXAMPLE_TEST_AUDIO_SUMMARY = "example_test_audio_summary.csv"
+SAMPLE_SUBMISSION_FILE = "sample_submission.csv"
+TEST_AUDIO_FILE = "test_audio"
 
 SR = 32000
 DURATION = 5
 N_MELS = 128  # The variable is chosen mainly to create a 128x128 image
 F_MIN = 20
 F_MAX = 16000
+TRAINING_PERCENTAGE = 0.9
+DROPOUT_DENSE_LAYER = 0.3
+TRAINING_BATCH_SIZE = 32
+VALIDATION_BATCH_SIZE = 32
+TARGET_SIZE = (N_MELS, N_MELS)
