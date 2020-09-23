@@ -30,7 +30,7 @@ train_generator = data_generation.flow_from_directory(
     shuffle = True,
     seed = 42)
 
-test_generation = data_generation.flow_from_directory(
+test_generator = data_generation.flow_from_directory(
     directory = '../birdsong-recognition/output_spectro/output_spectro/',
     target_size = (128, 128),
     color_mode ="grayscale",
@@ -74,8 +74,8 @@ model.compile(loss="categorical_crossentropy", optimizer='adam')
 history = model.fit(train_generator,
                     epochs = 20,
                     shuffle = True,
-                    validation_data = test_generation,
+                    validation_data = test_generator,
                     callbacks = callbacks)
 
 
-model.load_weights("best_model.h5")
+model.save("best_model.h5")
