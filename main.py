@@ -4,9 +4,9 @@ import re
 
 import librosa.display
 import tensorflow as tf
-from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from keras_preprocessing.image import ImageDataGenerator
 from sklearn.utils import class_weight
+from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from tensorflow.python.keras.layers import GlobalMaxPooling2D, Dense, BatchNormalization, Activation, Dropout
 
 from Utils import *
@@ -17,7 +17,7 @@ def data_augmentation(df, target_size, batch_size, shuffle):
 
     return data_generation.flow_from_dataframe(
         dataframe=df,
-        x_col='song_sample',
+        x_col='bird_call_filepath',
         y_col='bird',
         directory='/',
         target_size=target_size,
