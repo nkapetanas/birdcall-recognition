@@ -7,7 +7,8 @@ import tensorflow as tf
 from keras_preprocessing.image import ImageDataGenerator
 from sklearn.utils import class_weight
 from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
-from tensorflow.python.keras.layers import GlobalMaxPooling2D, Dense, BatchNormalization, Activation, Dropout
+from tensorflow.python.keras.layers import GlobalMaxPooling2D, Dense, Flatten, \
+    BatchNormalization, Activation, Dropout, Conv2D, MaxPooling2D
 
 from Utils import *
 
@@ -50,6 +51,31 @@ def get_model():
     model.summary()
     return model
 
+def get_model_light(input_shape=(128, 128, 3)):
+
+    model = tf.keras.Sequential()
+    model.add(Conv2D(64,(4,4), input_shape=input_shape))
+    model.add(Activation('relu'))
+
+    model.add(MaxPooling2D((2, 2)))
+    
+    model.add(Conv2D(128, (5, 5)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2)))
+
+    model.add(Flatten())
+
+    model.add(Dense(256, use_bias=False))
+    model.add(BatchNormalization())
+    
+    model.add(Activation('relu'))
+    model.add(Dropout(DROPOUT_DENSE_LAYER))
+
+    model.add(Dense(len(classes_to_predict), activation="softmax"))
+
+    model.summary()
+    return model
+
 
 def load_created_melspectro():
     birdcall_list = []
@@ -75,7 +101,7 @@ callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=2, verbose=1, factor
              EarlyStopping(monitor='val_loss', patience=5),
              ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
-model = get_model()
+model = get_model_light()
 model.compile(loss="categorical_crossentropy", optimizer='adam')
 
 class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, birdcall_df.bird.values)
