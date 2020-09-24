@@ -1,8 +1,10 @@
 import librosa
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import sklearn
+from keras import backend as K
+
 from properties import *
 
 
@@ -30,6 +32,36 @@ def predict_on_melspectrogram(song_sample, sampling_rate, sample_length, model, 
     return predicted_bird
 
 
+def recall_metric(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
+
+
+def precision_metric(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+
+def f1(y_true, y_pred):
+    precision = precision_metric(y_true, y_pred)
+    recall = recall_metric(y_true, y_pred)
+    return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
+
+
+def plot_hist(hist):
+    plt.plot(hist.history["accuracy"])
+    plt.plot(hist.history["val_accuracy"])
+    plt.title("model accuracy")
+    plt.ylabel("accuracy")
+    plt.xlabel("epoch")
+    plt.legend(["train", "validation"], loc="upper left")
+    plt.show()
+
+
 def plot_loss_over_epoch(history):
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -39,7 +71,8 @@ def plot_loss_over_epoch(history):
     plt.legend(['Train', 'Validation'], loc='best')
     plt.show()
 
-def create_plot_Keras_model(history, field):
+
+def create_plot_train_test_model(history, field):
     plt.plot(history.history[field])
     plt.title('model ' + field)
     plt.ylabel(field)
