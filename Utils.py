@@ -61,6 +61,14 @@ def plot_hist(hist):
     plt.legend(["train", "validation"], loc="upper left")
     plt.show()
 
+def plot_hist_loss(hist):
+    plt.plot(hist.history["loss"])
+    plt.plot(hist.history["val_loss"])
+    plt.title("model accuracy")
+    plt.ylabel("Loss")
+    plt.xlabel("epoch")
+    plt.legend(["train", "validation"], loc="upper left")
+    plt.show()
 
 def plot_loss_over_epoch(history):
     plt.plot(history.history['loss'])
