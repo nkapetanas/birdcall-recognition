@@ -151,9 +151,11 @@ history = model.fit(train_generator,
                     validation_data=validation_generator,
                     callbacks=callbacks)
 
+plot_hist_loss(history)    
+
 generated_predictions = model.predict_generator(test_generator)
 
-test_results_df = pd.DataFrame(columns=["prediction", "groundtruth", "correct_prediction"])
+test_results_df = pd.DataFrame(columns=["prediction", "groundtruth"])
 
 for pred, ground_truth in zip(generated_predictions, test_generator.__getitem__(0)[1]):
     test_results_df = test_results_df.append(
@@ -163,14 +165,22 @@ for pred, ground_truth in zip(generated_predictions, test_generator.__getitem__(
         ignore_index=True)
 
 test_results_df = test_results_df.append(
-    {"prediction": classes_to_predict[np.argmax(generated_predictions)],
-     "groundtruth": classes_to_predict[np.argmax(test_generator)],
-     "correct_prediction": np.argmax(pred) == np.argmax(ground_truth)},
-    ignore_index=True)
+    {"prediction": classes_to_predict[np.argmax(generated_predictions, axis=1)],
+     "groundtruth": classes_to_predict[test_df.bird.values]},
+     ignore_index=True)
+
+
+y_true = test_df.bird.values
+y_predicted = np.argmax(generated_predictions, axis=1)
+    
+from sklearn.metric import classification_report     
+print(classification_report(y_true, y_predicted))
+
 
 model.load_weights("best_model1.h5")
 
-plot_hist(history)
+    
+
 
 
 def predict_submission(df, audio_file_path):
