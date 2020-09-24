@@ -7,6 +7,9 @@ import librosa.display
 import tensorflow as tf
 from keras_preprocessing.image import ImageDataGenerator
 from sklearn.utils import class_weight
+from sklearn.metric import classification_report
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from tensorflow.python.keras.layers import GlobalMaxPooling2D, Dense, Flatten, \
     BatchNormalization, Activation, Dropout, Conv2D, MaxPooling2D
@@ -25,7 +28,7 @@ def data_augmentation(df, target_size, batch_size, shuffle):
         batch_size=batch_size,
         shuffle=shuffle,
         class_mode='categorical',
-        validate_filenames= False)
+        validate_filenames=False)
 
 
 def get_model():
@@ -54,9 +57,8 @@ def get_model():
 
 
 def get_model_light(input_shape=(128, 128, 3)):
-
     model = tf.keras.Sequential()
-    model.add(Conv2D(64,(5,5), input_shape=input_shape))
+    model.add(Conv2D(64, (5, 5), input_shape=input_shape))
     model.add(Activation('relu'))
 
     model.add(MaxPooling2D((2, 2)))
@@ -92,7 +94,7 @@ def load_created_melspectro():
 
     for img in files:
         if current_number <= total:
-            filename =  img[14:]
+            filename = img[14:]
             bird_type = re.search('_(.*).tif', filename).group(1)
             birdcall_list.append({"bird_call_filepath": "./output_data/" + filename,
                                   "bird": bird_type})
@@ -100,8 +102,8 @@ def load_created_melspectro():
 
     return pd.DataFrame(birdcall_list)
 
+
 birdcall_df = load_created_melspectro()
-from sklearn.model_selection import train_test_split
 
 """
 x_train, x_test, y_train, y_test =  train_test_split(
@@ -114,13 +116,13 @@ x_train, x_val, y_train, y_val =  train_test_split(
     test_size=0.20, random_state=1)
 """
 
-train_df, test_df = train_test_split(birdcall_df, 
-                                   stratify =birdcall_df.bird.values,
-                                   test_size = 0.30, random_state=1)
+train_df, test_df = train_test_split(birdcall_df,
+                                     stratify=birdcall_df.bird.values,
+                                     test_size=0.30, random_state=1)
 
-train_df, valid_df = train_test_split(train_df, 
-                                   stratify =train_df.bird.values,
-                                   test_size = 0.25, random_state=1)
+train_df, valid_df = train_test_split(train_df,
+                                      stratify=train_df.bird.values,
+                                      test_size=0.25, random_state=1)
 
 """
 training_item_count = int(len(birdcall_df) * TRAINING_PERCENTAGE)
@@ -137,10 +139,8 @@ callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=2, verbose=1, factor
 model = get_model_light()
 model.compile(loss="categorical_crossentropy", optimizer='adam')
 
-    
-    
-#class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, birdcall_df.bird.values)
-#class_weights_dict = {i: class_weights[i] for i, label in enumerate(classes_to_predict)}
+# class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, birdcall_df.bird.values)
+# class_weights_dict = {i: class_weights[i] for i, label in enumerate(classes_to_predict)}
 
 train_generator = data_augmentation(train_df, TARGET_SIZE, TRAINING_BATCH_SIZE, True)
 validation_generator = data_augmentation(valid_df, TARGET_SIZE, VALIDATION_BATCH_SIZE, False)
@@ -151,47 +151,26 @@ history = model.fit(train_generator,
                     validation_data=validation_generator,
                     callbacks=callbacks)
 
-
 generated_predictions = model.predict_generator(test_generator)
-
-
 
 test_results_df = pd.DataFrame(columns=["prediction", "groundtruth", "correct_prediction"])
 
 for pred, ground_truth in zip(generated_predictions, test_generator.__getitem__(0)[1]):
-    
     test_results_df = test_results_df.append(
         {"prediction": classes_to_predict[np.argmax(pred)],
          "groundtruth": classes_to_predict[np.argmax(ground_truth)],
          "correct_prediction": np.argmax(pred) == np.argmax(ground_truth)},
         ignore_index=True)
-    
+
 test_results_df = test_results_df.append(
     {"prediction": classes_to_predict[np.argmax(generated_predictions)],
      "groundtruth": classes_to_predict[np.argmax(test_generator)],
      "correct_prediction": np.argmax(pred) == np.argmax(ground_truth)},
     ignore_index=True)
-    
-    
-from sklearn.metric import classification_report     
 
 model.load_weights("best_model1.h5")
 
-
-import matplotlib.pyplot as plt
-
-
-def plot_hist(hist):
-    plt.plot(hist.history["accuracy"])
-    plt.plot(hist.history["val_accuracy"])
-    plt.title("model accuracy")
-    plt.ylabel("accuracy")
-    plt.xlabel("epoch")
-    plt.legend(["train", "validation"], loc="upper left")
-    plt.show()
-    
-plot_hist(history)    
-
+plot_hist(history)
 
 
 def predict_submission(df, audio_file_path):
@@ -206,7 +185,7 @@ def predict_submission(df, audio_file_path):
             if previous_filename == "" or previous_filename != row.audio_id:
                 filename = '{}/{}.mp3'.format(audio_file_path, row.audio_id)
                 audio_time_series, sampling_rate = librosa.load(filename)
-                sample_length = 5 * sampling_rate
+                sample_length = DURATION * sampling_rate
             previous_filename = row.audio_id
 
             # basically allows to check if we are running the examples or the test set.
