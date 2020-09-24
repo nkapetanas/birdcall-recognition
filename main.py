@@ -54,15 +54,18 @@ def get_model():
 def get_model_light(input_shape=(128, 128, 3)):
 
     model = tf.keras.Sequential()
-    model.add(Conv2D(64,(4,4), input_shape=input_shape))
+    model.add(Conv2D(64,(5,5), input_shape=input_shape))
     model.add(Activation('relu'))
 
     model.add(MaxPooling2D((2, 2)))
     
     model.add(Conv2D(128, (5, 5)))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D((2, 2)))
+    model.add(MaxPooling2D((3, 3)))
 
+    model.add(Conv2D(32, (5, 5)))
+    model.add(Activation('relu'))
+    
     model.add(Flatten())
 
     model.add(Dense(256, use_bias=False))
