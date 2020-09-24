@@ -101,42 +101,97 @@ def load_created_melspectro():
     return pd.DataFrame(birdcall_list)
 
 birdcall_df = load_created_melspectro()
+from sklearn.model_selection import train_test_split
 
+"""
+x_train, x_test, y_train, y_test =  train_test_split(
+    birdcall_df.bird_call_filepath.values, birdcall_df.bird.values,
+    test_size=0.30, random_state=1)
+
+
+x_train, x_val, y_train, y_val =  train_test_split(
+    x_train, y_train,
+    test_size=0.20, random_state=1)
+"""
+
+train_df, test_df = train_test_split(birdcall_df, 
+                                   stratify =birdcall_df.bird.values,
+                                   test_size = 0.30, random_state=1)
+
+train_df, valid_df = train_test_split(train_df, 
+                                   stratify =train_df.bird.values,
+                                   test_size = 0.25, random_state=1)
+
+"""
 training_item_count = int(len(birdcall_df) * TRAINING_PERCENTAGE)
 validation_item_count = len(birdcall_df) - int(len(birdcall_df) * TRAINING_PERCENTAGE)
 training_df = birdcall_df[:training_item_count]
 validation_df = birdcall_df[training_item_count:]
-
+"""
 classes_to_predict = sorted(birdcall_df.bird.unique())
 
 callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=2, verbose=1, factor=0.7),
              EarlyStopping(monitor='val_loss', patience=5),
-             ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
+             ModelCheckpoint(filepath='best_model1.h5', monitor='val_loss', save_best_only=True)]
 
 model = get_model_light()
 model.compile(loss="categorical_crossentropy", optimizer='adam')
 
-class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, birdcall_df.bird.values)
-class_weights_dict = {i: class_weights[i] for i, label in enumerate(classes_to_predict)}
+    
+    
+#class_weights = class_weight.compute_class_weight("balanced", classes_to_predict, birdcall_df.bird.values)
+#class_weights_dict = {i: class_weights[i] for i, label in enumerate(classes_to_predict)}
 
-train_generator = data_augmentation(training_df, TARGET_SIZE, TRAINING_BATCH_SIZE, True)
-validation_generator = data_augmentation(validation_df, TARGET_SIZE, VALIDATION_BATCH_SIZE, False)
+train_generator = data_augmentation(train_df, TARGET_SIZE, TRAINING_BATCH_SIZE, True)
+validation_generator = data_augmentation(valid_df, TARGET_SIZE, VALIDATION_BATCH_SIZE, False)
+test_generator = data_augmentation(test_df, TARGET_SIZE, VALIDATION_BATCH_SIZE, False)
 
 history = model.fit(train_generator,
                     epochs=20,
                     validation_data=validation_generator,
                     callbacks=callbacks)
 
-generated_predictions = model.predict_generator(validation_generator)
-validation_df = pd.DataFrame(columns=["prediction", "groundtruth", "correct_prediction"])
 
-for pred, ground_truth in zip(generated_predictions[:16], validation_generator.__getitem__(0)[1]):
-    validation_df = validation_df.append({"prediction": classes_to_predict[np.argmax(pred)],
-                                          "groundtruth": classes_to_predict[np.argmax(ground_truth)],
-                                          "correct_prediction": np.argmax(pred) == np.argmax(ground_truth)},
-                                         ignore_index=True)
+generated_predictions = model.predict_generator(test_generator)
 
-model.load_weights("best_model.h5")
+
+
+test_results_df = pd.DataFrame(columns=["prediction", "groundtruth", "correct_prediction"])
+
+for pred, ground_truth in zip(generated_predictions, test_generator.__getitem__(0)[1]):
+    
+    test_results_df = test_results_df.append(
+        {"prediction": classes_to_predict[np.argmax(pred)],
+         "groundtruth": classes_to_predict[np.argmax(ground_truth)],
+         "correct_prediction": np.argmax(pred) == np.argmax(ground_truth)},
+        ignore_index=True)
+    
+test_results_df = test_results_df.append(
+    {"prediction": classes_to_predict[np.argmax(generated_predictions)],
+     "groundtruth": classes_to_predict[np.argmax(test_generator)],
+     "correct_prediction": np.argmax(pred) == np.argmax(ground_truth)},
+    ignore_index=True)
+    
+    
+from sklearn.metric import classification_report     
+
+model.load_weights("best_model1.h5")
+
+
+import matplotlib.pyplot as plt
+
+
+def plot_hist(hist):
+    plt.plot(hist.history["accuracy"])
+    plt.plot(hist.history["val_accuracy"])
+    plt.title("model accuracy")
+    plt.ylabel("accuracy")
+    plt.xlabel("epoch")
+    plt.legend(["train", "validation"], loc="upper left")
+    plt.show()
+    
+plot_hist(history)    
+
 
 
 def predict_submission(df, audio_file_path):

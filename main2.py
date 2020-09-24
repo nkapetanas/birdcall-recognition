@@ -78,4 +78,4 @@ history = model.fit(train_generator,
                     callbacks = callbacks)
 
 
-model.save("best_model.h5")
+model.save("best_model2.h5")
