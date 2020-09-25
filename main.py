@@ -16,7 +16,7 @@ from tensorflow.python.keras.layers import GlobalMaxPooling2D, Dense, Flatten, \
 
 from Utils import *
 
-
+# a data generator for spectrogram images
 def data_augmentation(df, target_size, batch_size, shuffle):
     data_generation = ImageDataGenerator(rescale=1. / 255)
 
@@ -31,31 +31,7 @@ def data_augmentation(df, target_size, batch_size, shuffle):
         validate_filenames=False)
 
 
-def get_model():
-    efficient_net_layers = tf.keras.applications.EfficientNetB0(weights=None, include_top=False,
-                                                                input_shape=(128, 128, 3))
-
-    # conv_base = ResNet50(weights='imagenet', include_top=False, pooling=None)
-    # conv_base.trainable = False
-
-    for layer in efficient_net_layers.layers:
-        layer.trainable = True
-
-    model = tf.keras.Sequential()
-    model.add(efficient_net_layers)
-
-    model.add(GlobalMaxPooling2D())
-    model.add(Dense(256, use_bias=False))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    model.add(Dropout(DROPOUT_DENSE_LAYER))
-
-    model.add(Dense(len(classes_to_predict), activation="softmax"))
-
-    model.summary()
-    return model
-
-
+# creates our custom model
 def get_model_light(input_shape=(128, 128, 3)):
     model = tf.keras.Sequential()
     model.add(Conv2D(64, (5, 5), input_shape=input_shape))
@@ -83,7 +59,7 @@ def get_model_light(input_shape=(128, 128, 3)):
     model.summary()
     return model
 
-
+# loader of images from folder
 def load_created_melspectro():
     birdcall_list = []
 
@@ -106,7 +82,7 @@ def load_created_melspectro():
 birdcall_df = load_created_melspectro()
 
 
-
+# split data to create train - validation - test
 train_df, test_df = train_test_split(birdcall_df,
                                      stratify=birdcall_df.bird.values,
                                      test_size=0.30, random_state=1)
@@ -119,6 +95,7 @@ train_df, valid_df = train_test_split(train_df,
 classes_to_predict = sorted(birdcall_df.bird.unique())
 classes_pos_dict = (dict(enumerate(classes_to_predict)))
 
+# create callbacks for reducing Learning rate, saving mode and early stopping.
 callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=2, verbose=1, factor=0.7),
              EarlyStopping(monitor='val_loss', patience=5),
              ModelCheckpoint(filepath='best_model1.h5', monitor='val_loss', save_best_only=True)]
@@ -127,27 +104,28 @@ model = get_model_light()
 model.compile(loss="categorical_crossentropy", optimizer='adam')
 
 
-
+# create one data generator for each sub set
 train_generator = data_augmentation(train_df, TARGET_SIZE, TRAINING_BATCH_SIZE, True)
 validation_generator = data_augmentation(valid_df, TARGET_SIZE, VALIDATION_BATCH_SIZE, False)
 test_generator = data_augmentation(test_df, TARGET_SIZE, VALIDATION_BATCH_SIZE, False)
-
+# fit the model
 history = model.fit(train_generator,
                     epochs=20,
                     validation_data=validation_generator,
                     callbacks=callbacks)
-
+# plot the loss of training
 plot_hist_loss(history)    
-
+# predict unseen test 
 generated_predictions = model.predict_generator(test_generator)
 
 test_results_df = pd.DataFrame(columns=["prediction", "groundtruth"])
 
-
+# true labels
 y_true = test_df.bird.values
-
+# predicted labels
 y_predicted = [classes_pos_dict.get(key) for key in np.argmax(generated_predictions, axis=1)]
-    
+
+# print results
 from sklearn.metrics import classification_report
 print(classification_report(y_true, y_predicted))
 
